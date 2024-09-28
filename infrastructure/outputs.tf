@@ -1,75 +1,51 @@
-/*
-output "region" {
-  description = "The region where resources deployed"
-  value       = var.aws_region
+output "cce_cluster_name" {
+  description = "cluster name"
+  value       = module.cce.cluster_name
 }
 
-output "eks_cluster_endpoint" {
-  description = "The EKS endpoint"
-  value       = module.eks.cluster_endpoint
+output "cce_cluster_address" {
+  description = "cluster address"
+  value       = module.cce.cluster_address
 }
 
-output "eks_cluster_arn" {
-  description = "The Amazon Resource Name (ARN) of the cluster"
-  value       = module.eks.cluster_arn
+output "cluster_node_pool_password" {
+  description = "cluster node pool password"
+  value       = module.cce.cluster_node_pool_password
+  sensitive   = true
 }
 
-output "eks_cluster_name" {
-  description = "The EKS name"
-  value       = module.eks.cluster_name
+output "cce_cluster_raw_kube_config" {
+  description = "cluster raw kube config"
+  value       = module.cce.cluster_raw_kube_config
 }
 
-output "eks_cluster_ca_certificate" {
-  description = "The EKS certificate"
-  value       = module.eks.cluster_ca_certificate
+output "cce_cluster_ca_certificates" {
+  description = "cluster certificates"
+  value       = module.cce.cluster_ca_certificates
 }
 
-output "eks_role_arn" {
-  description = "The EKS role ARN"
-  value       = module.eks.cluster_role_arn
+output "cce_cluster_certificate_users_client_certs" {
+  description = "cluster users"
+  value       = module.cce.cluster_certificate_users_client_certs
 }
 
-output "eks_cloudwatch_log_group_name" {
-  description = "The cloudWatch log group for EKS"
-  value       = module.eks.cluster_cloudwatch_log_group_name
+output "cce_cluster_certificate_users_client_key_data" {
+  description = "cluster users"
+  value       = module.cce.cluster_certificate_users_client_key_data
 }
 
-output "msk_bootstrap_servers" {
-  description = "MSK bootstrap servers list"
-  value       = module.msk.bootstrap_brokers
+output "wordpress_username" {
+  description = "wordpress username"
+  value       = module.wordpress.wp_username
 }
 
-output "msk_zookeeper" {
-  description = "MSK zookeeper address"
-  value       = module.msk.zookeeper_connect_string
+output "wordpress_password" {
+  description = "wordpress password"
+  value       = module.wordpress.wp_password
+  sensitive   = true
 }
 
-output "pg_rds_db_username" {
-  description = "RDS DB instance username"
-  value = module.pg_db.db_username
+output "wordpress_site_address" {
+  description = "wordpress website address"
+  value       = module.wordpress.site_address
 }
-
-output "pg_rds_db_password" {
-  description = "RDS DB instance password"
-  value = module.pg_db.db_password
-}
-
-output "pg_rds_db_private_address" {
-  description = "RDS DB instance address"
-  value = module.pg_db.db_private_address
-}
-
-output "pg_rds_db_private_port" {
-  description = "RDS DB instance port"
-  value = module.pg_db.db_private_port
-}
-
-output "ecr_repos" {
-  description = "ecr repos"
-  value = module.ecr.repos
-}
-
-output "redis_cluster_endpoint" {
-  description = "redis cluster endpoint"
-  value = module.redis.cluster_endpoint
-}*/

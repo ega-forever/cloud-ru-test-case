@@ -1,3 +1,4 @@
+/* Account zone */
 variable "region" {
   type        = string
   description = "aws region to use"
@@ -7,9 +8,19 @@ variable "region" {
 variable "access_key" {
   type = string
 }
+
 variable "secret_key" {
   type = string
 }
+
+variable "account_id" {
+  type = string
+  description = "Account id can be checked out in My credentials page on portal (Project ID)"
+}
+
+/* end Account zone */
+
+/* Enterprise project zone */
 
 variable "environment_prefix" {
   type        = string
@@ -17,7 +28,11 @@ variable "environment_prefix" {
   default     = "dev"
 }
 
-/* Enterprise project zone */
+variable "enterprise_project_id" {
+  type        = string
+  description = "enterprise_project_id"
+  default     = null
+}
 
 variable "enterprise_project_name" {
   type        = string
@@ -65,145 +80,81 @@ variable "vpc_secondary_dns" {
   description = "primary dns ip address"
 }
 
-variable "vpc_subnet_per_each_zones_count" {
+variable "vpc_subnet_zones_allocation_number" {
   type        = number
-  description = "How much public and private subnets should be created in each AZ"
+  description = "How much AZ use for subnet allocation"
+  default     = 1
+}
+
+variable "vpc_subnets_count" {
+  type        = number
+  description = "How many subnets should be created in VPC"
   default     = 1
 }
 
 /* end VPC zone */
-/*
-variable "resources_allocation_cidr_block" {
+
+
+/* CCE zone */
+variable "cce_name" {
   type        = string
-  description = "in which network all resources, including VPC and VPN users will reside"
-  default = "10.0.0.0/8"
+  default     = "cce-cluster-showcase"
+  description = "name of CCE cluster"
+}
+
+variable "cce_flavor_id" {
+  type        = string
+  default     = "cce.s2.small"
+  description = "CCE cluster max size"
 }
 
 
-variable "eks_cluster_name" {
-  description = "Name of the EKS cluster"
+variable "cce_node_pool_os" {
   type        = string
-  default     = "eks-cluster"
+  default     = "HCE OS 2.0"
+  description = "OS of node in CCE cluster"
 }
 
-variable "eks_cluster_version" {
-  description = "Kubernetes `<major>.<minor>` version to use for the EKS cluster (i.e.: `1.21`), omit to use default latest"
+variable "cce_node_pool_flavor_id" {
   type        = string
-  default     = "1.21"
+  default     = "c7n.2xlarge.4"
+  description = "node size"
 }
 
-variable "eks_cluster_service_ipv4_cidr" {
-  description = "The CIDR block to assign Kubernetes service IP addresses from. If you don't specify a block, Kubernetes assigns addresses from either the 10.100.0.0/16 or 172.20.0.0/16 CIDR blocks"
-  type        = string
-  default = "10.2.0.0/16"
-}
-
-variable "eks_node_group_min_size" {
-  description = "Minimal size of EKS cluster"
+variable "cce_node_pool_initial_node_count" {
   type        = number
   default     = 1
+  description = "node pool initial node count"
 }
 
-variable "eks_node_group_max_size" {
-  description = "Max size of EKS cluster"
+variable "cce_node_pool_min_node_count" {
+  type        = number
+  default     = 1
+  description = "node pool min node count"
+}
+
+variable "cce_node_pool_max_node_count" {
   type        = number
   default     = 3
+  description = "node pool max node count"
 }
 
-variable "eks_node_group_desired_size" {
-  description = "Desired size of EKS cluster"
+variable "cce_node_pool_scale_down_cooldown_time_minutes" {
   type        = number
-  default     = 1
+  default     = 10
+  description = "node pool scale down in minutes"
 }
 
-variable "eks_node_group_instance_type" {
-  description = "EC2 instance type of EKS node group in cluster"
-  type        = string
-  default     = "t2.medium"
-}
-
-variable "db_name" {
-  type        = string
-  description = "Name of RDS postgres instance"
-  default = "db"
-}
-
-variable "db_engine_version" {
-  type        = string
-  description = "used engine version for db"
-  default = "13.5"
-}
-
-variable "db_instance_type" {
-  type        = string
-  description = "instance resources type"
-  default = "db.t3.medium"
-}
-
-variable "db_storage_size" {
+variable "cce_node_pool_root_volume_size" {
   type        = number
-  description = "db storage size in GB"
-  default = 10
+  default     = 50
+  description = "node pool root volume size in GB"
 }
 
-variable "db_max_storage_size" {
+variable "cce_node_pool_data_volume_size" {
   type        = number
-  description = "autoscale max db storage size in GB"
-  default = 100
+  default     = 100
+  description = "node pool data volume size in GB"
 }
 
-
-variable "msk_name" {
-  type        = string
-  description = "Name of MSK instance"
-  default = "msk-cluster"
-}
-
-variable "msk_version" {
-  type        = string
-  description = "MSK version"
-  default = "2.6.2"
-}
-
-variable "msk_instance_type" {
-  type        = string
-  description = "instance resources class"
-  default = "kafka.t3.small"
-}
-
-variable "msk_storage_size" {
-  type        = number
-  description = "MSK storage size in GB"
-  default = 50
-}
-
-variable "vpn_client_name" {
-  description = "Name of the vpn endpoint"
-  type        = string
-  default = "vpn-endpoint"
-}
-
-
-variable "vpn_client_cidr_block" {
-  description = "The IPv4 address range, in CIDR notation being /22 or greater, from which to assign client IP addresses"
-  type        = string
-  default = "10.1.0.0/22"
-}
-
-variable "vpn_client_profile_names" {
-  description = "client names. For each of them the certificate will be generated"
-  type        = set(string)
-  default = ["wise.nautilus", "angry.madison"] #test profile names
-}
-
-variable "vpn_client_key_export_folder" {
-  description = "export folder for the ovpn profiles"
-  type        = string
-  default = "../ovpn_profiles"
-}
-
-variable "redis_name" {
-  type        = string
-  description = "Name of Redis instance"
-  default = "redis-cluster"
-}*/
+/* end CEE zone */

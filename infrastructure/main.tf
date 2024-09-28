@@ -6,136 +6,62 @@ module "enterprise_project" {
   source      = "./modules/enterprise_project"
   name        = var.enterprise_project_name
   description = var.enterprise_project_description
+  count       = var.enterprise_project_id == null ? 1 : 0
 }
 
 
 module "vpc" {
-  source                = "./modules/vpc"
-  vpc_name              = "${var.environment_prefix}-${var.vpc_name}"
-  project_id            = module.enterprise_project.project_id
-  cidr_block            = var.vpc_cidr_block
-  subnets_per_each_zone = var.vpc_subnet_per_each_zones_count
-  availability_zones    = data.sbercloud_availability_zones.zones.names
-  tags                  = {
+  source            = "./modules/vpc"
+  vpc_name          = "${var.environment_prefix}-${var.vpc_name}"
+  project_id        = var.enterprise_project_id == null ? module.enterprise_project[0].project_id : var.enterprise_project_id
+  cidr_block        = var.vpc_cidr_block
+  subnets_count     = var.vpc_subnets_count
+  availability_zone = sort(data.sbercloud_availability_zones.zones.names)[0]
+  tags              = {
     environment : var.environment_prefix
   }
-  /*  public_subnet_tags = {
-      "kubernetes.io/role/elb": 1
-    }*/
-  depends_on = [
-    module.enterprise_project.project_id
+}
+
+module "cce" {
+  source                                     = "./modules/cce"
+  account_id                                 = var.account_id
+  project_id                                 = var.enterprise_project_id == null ? module.enterprise_project[0].project_id : var.enterprise_project_id
+  name                                       = var.cce_name
+  flavor_id                                  = var.cce_flavor_id
+  vpc_id                                     = module.vpc.vpc_id
+  vpc_subnet_for_dns_id                      = module.vpc.vpc_subnets_id[0]
+  vpc_eni_subnet_id                          = module.vpc.vpc_subnets_ipv4_subnet_id
+  node_pool_os                               = var.cce_node_pool_os
+  node_pool_flavor_id                        = var.cce_node_pool_flavor_id
+  node_pool_initial_node_count               = var.cce_node_pool_initial_node_count
+  node_pool_min_node_count                   = var.cce_node_pool_min_node_count
+  node_pool_max_node_count                   = var.cce_node_pool_max_node_count
+  node_pool_scale_down_cooldown_time_minutes = var.cce_node_pool_scale_down_cooldown_time_minutes
+  node_pool_root_volume_size                 = var.cce_node_pool_root_volume_size
+  node_pool_data_volume_size                 = var.cce_node_pool_data_volume_size
+  addons = {
+    "autoscaler" : "1.29.17",
+    "cce-hpa-controller" : "1.4.3",
+    "metrics-server": "1.3.60"
+    #"coredns" : "1.29.4" disabled, since coredns installs automatically during cluster provision
+  }
+  depends_on                                 = [
+    module.vpc
   ]
 }
 
-/*
-data "aws_availability_zones" "available" {
-  state = "available"
+module "wordpress" {
+  source                         = "./modules/apps/wordpress"
+  cluster_host                   = module.cce.cluster_address
+  cluster_client_certificate     = module.cce.cluster_certificate_users_client_certs[0]
+  cluster_client_key             = module.cce.cluster_certificate_users_client_key_data[0]
+  cluster_cluster_ca_certificate = module.cce.cluster_ca_certificates[0]
+  cluster_node_pool_nodes_count  = module.cce.cluster_node_pool_current_node_count
+
+  elb_availability_zones = slice(sort(data.sbercloud_availability_zones.zones.names), 0, 2)
+  project_id             = var.enterprise_project_id
+  vpc_id                 = module.vpc.vpc_id
+  vpc_ipv4_subnet_id     = module.vpc.vpc_subnets_ipv4_subnet_id[0]
+  vpc_subnet_id          = module.vpc.vpc_subnets_id[0]
+  vpc_cidr_block         = var.vpc_cidr_block
 }
-
-module "eks" {
-  source                     = "./modules/eks"
-  cluster_name               = "${var.environment_prefix}-${var.eks_cluster_name}"
-  cluster_version            = var.eks_cluster_version
-  subnet_ids                 = module.vpc.vpc_public_subnets_id
-  security_group_cidr_blocks = [var.resources_allocation_cidr_block]
-
-  vpc_id = module.vpc.vpc_id
-
-  node_group_min_size       = var.eks_node_group_min_size
-  node_group_max_size       = var.eks_node_group_max_size
-  node_group_desired_size   = var.eks_node_group_desired_size
-  node_group_instance_type  = var.eks_node_group_instance_type
-  cluster_service_ipv4_cidr = var.eks_cluster_service_ipv4_cidr
-  tags                      = {
-    environment : var.environment_prefix
-  }
-}
-
-module "pg_db" {
-  source                     = "./modules/pg_rds"
-  db_name                    = "${var.environment_prefix}${var.db_name}"
-  engine_version             = var.db_engine_version
-  instance_type             = var.db_instance_type
-  storage_size               = var.db_storage_size
-  max_storage_size           = var.db_max_storage_size
-  vpc_id                     = module.vpc.vpc_id
-  security_group_cidr_blocks = [var.resources_allocation_cidr_block]
-  subnet_ids                 = module.vpc.vpc_private_subnets_id
-
-  tags = {
-    environment : var.environment_prefix
-  }
-}
-
-module "msk" {
-  source          = "./modules/msk"
-  cluster_name    = "${var.environment_prefix}-${var.msk_name}"
-  cluster_version = var.msk_version
-  vpc_id                     = module.vpc.vpc_id
-  subnet_ids                 = module.vpc.vpc_private_subnets_id
-  security_group_cidr_blocks = [var.resources_allocation_cidr_block]
-
-  cluster_size          = length(module.vpc.vpc_private_subnets_id) * 2
-  cluster_storage_size  = var.msk_storage_size
-  cluster_instance_type = var.msk_instance_type
-  tags                  = {
-    environment : var.environment_prefix
-  }
-}
-
-module "ecr" {
-  source          = "./modules/ecr"
-  repo_names = [
-    "backend.services.counter"
-  ]
-  tags                  = {
-    environment : var.environment_prefix
-  }
-}
-
-module "client_vpn" {
-  for_each = var.vpn_client_profile_names
-  source               = "./modules/client_vpn"
-  vpn_name             = "${var.environment_prefix}-${var.vpn_client_name}-${each.value}"
-  client_cidr_block    = var.vpn_client_cidr_block
-  network_cidr_block   = var.resources_allocation_cidr_block
-  vpc_id               = module.vpc.vpc_id
-  subnets_id           = module.vpc.vpc_private_subnets_id
-  client_profile_name = each.value
-  key_export_folder    = var.vpn_client_key_export_folder
-  tags                  = {
-    environment : var.environment_prefix
-  }
-}
-
-module "redis" { //todo move to single cluster
-  source          = "./modules/redis"
-  cluster_name    = "${var.environment_prefix}-${var.redis_name}"
-  vpc_id = module.vpc.vpc_id
-  subnet_ids = module.vpc.vpc_private_subnets_id
-  security_group_cidr_blocks = ["10.0.0.0/8"] //todo
-  cluster_instance_type = "cache.m4.large" // todo
-  cluster_family = "redis6.x" // todo
-  cluster_engine_version = "6.x" //todo
-  cluster_replicas_per_node_group = 2 //todo
-  cluster_num_node_groups = 3 //todo
-  tags                  = {
-    environment : var.environment_prefix
-  }
-}
-*/
-
-
-/*
-
-module "vpn" {
-  source               = "./vpn"
-  aws_vpc_id           = module.aws_vpc.vpc_id
-  aws_route_table_ids  = [module.aws_vpc.private_route_table_id, module.aws_vpc.public_route_table_id]
-  gcp_region           = var.google_region
-  gcp_vpc_id           = module.gcp_vpc.vpc_id
-  gcp_vpc_name         = module.gcp_vpc.vpc_name
-  gcp_subnet_self_link = module.gcp_vpc.vpc_private_subnet_self_link
-  gcp_vpn_name         = "vpn-connection"
-}
-*/

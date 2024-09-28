@@ -1,0 +1,19 @@
+phantom:
+  address: 178.170.192.88:80
+  header_http: "1.1"
+  headers:
+    - "[Host: 178.170.192.88]"
+    - "[Connection: close]"
+  uris:
+    - /
+  load_profile:
+    load_type: rps # schedule load by defining requests per second
+    schedule: line(10, 20, 3m) # starting from 1rps growing linearly to 10rps during 10 minutes
+console:
+  enabled: true # enable console output
+telegraf:
+  enabled: false # let's disable telegraf monitoring for the first time
+autostop:
+  autostop:
+    - http(4xx,100%,1s)
+    - http(5xx,100%,1s)

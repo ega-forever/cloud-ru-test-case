@@ -15,12 +15,6 @@ variable "cidr_block" {
   description = "the cidr block to use for the vpc"
 }
 
-variable "gateway_ip" {
-  type        = string
-  default = "192.168.0.1"
-  description = "gateway ip"
-}
-
 variable "primary_dns" {
   type        = string
   default = "100.125.13.59"
@@ -29,34 +23,22 @@ variable "primary_dns" {
 
 variable "secondary_dns" {
   type        = string
-  default = "100.125.65.14"
+  default = "8.8.8.8"
   description = "primary dns ip address"
 }
 
-variable "subnets_per_each_zone" {
+variable "subnets_count" {
   type        = number
   description = "how much private and private subnets to create per each AZ"
 }
 
-variable "availability_zones" {
-  type        = list(string)
-  description = "AZs where subnets will be located"
+variable "availability_zone" {
+  type        = string
+  description = "AZ where subnets will be located"
 }
 
 variable "tags" {
   type        = map(string)
   description = "tags to mark all related resources"
-  default = {}
-}
-
-variable "public_subnet_tags" {
-  type        = map(string)
-  description = "tags to mark public subnets"
-  default = {}
-}
-
-variable "private_subnet_tags" {
-  type        = map(string)
-  description = "tags to mark private subnets"
   default = {}
 }
